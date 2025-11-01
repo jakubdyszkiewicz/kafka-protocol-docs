@@ -3,10 +3,15 @@
 Scrape Kafka protocol error codes from the official documentation
 """
 
-import urllib.request
 import json
 import re
+from pathlib import Path
+import urllib.request
 from html.parser import HTMLParser
+
+BASE_DIR = Path(__file__).resolve().parent
+DOCS_DIR = BASE_DIR / "docs"
+ERROR_CODES_FILE = DOCS_DIR / "error_codes.json"
 
 
 class ErrorCodeTableParser(HTMLParser):
@@ -115,9 +120,11 @@ def parse_error_codes(html):
     return error_codes
 
 
-def save_to_json(error_codes, filename='error_codes.json'):
+def save_to_json(error_codes, filename=ERROR_CODES_FILE):
     """Save error codes to a JSON file"""
-    with open(filename, 'w', encoding='utf-8') as f:
+    filename = Path(filename)
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    with filename.open('w', encoding='utf-8') as f:
         json.dump(error_codes, f, indent=2, ensure_ascii=False)
 
     print(f"\nSaved {len(error_codes)} error codes to {filename}")

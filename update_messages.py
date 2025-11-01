@@ -3,15 +3,18 @@
 Update Kafka protocol message files from the official Apache Kafka repository
 """
 
-import os
-import sys
 import json
-import urllib.request
+import sys
 import urllib.error
+import urllib.request
+from pathlib import Path
 
 GITHUB_API_URL = "https://api.github.com/repos/apache/kafka/contents/clients/src/main/resources/common/message"
 RAW_GITHUB_URL = "https://raw.githubusercontent.com/apache/kafka/trunk/clients/src/main/resources/common/message"
-MESSAGES_DIR = "messages"
+BASE_DIR = Path(__file__).resolve().parent
+DOCS_DIR = BASE_DIR / "docs"
+MESSAGES_DIR = DOCS_DIR / "messages"
+MESSAGES_MANIFEST = DOCS_DIR / "messages.json"
 
 def fetch_file_list():
     """Fetch the list of files from GitHub API"""
@@ -31,7 +34,7 @@ def fetch_file_list():
 def download_file(filename):
     """Download a single file from GitHub"""
     url = f"{RAW_GITHUB_URL}/{filename}"
-    filepath = os.path.join(MESSAGES_DIR, filename)
+    filepath = MESSAGES_DIR / filename
 
     print(f"  Downloading {filename}...")
 
@@ -42,7 +45,8 @@ def download_file(filename):
         with urllib.request.urlopen(req) as response:
             content = response.read().decode('utf-8')
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with filepath.open('w', encoding='utf-8') as f:
             f.write(content)
 
         return True
@@ -52,16 +56,22 @@ def download_file(filename):
 
 def clean_old_files():
     """Remove all existing JSON files from messages directory"""
-    if not os.path.exists(MESSAGES_DIR):
-        os.makedirs(MESSAGES_DIR)
+    if not MESSAGES_DIR.exists():
+        MESSAGES_DIR.mkdir(parents=True, exist_ok=True)
         return
 
     print(f"Cleaning old files from {MESSAGES_DIR}/...")
-    for filename in os.listdir(MESSAGES_DIR):
-        if filename.endswith('.json'):
-            filepath = os.path.join(MESSAGES_DIR, filename)
-            os.remove(filepath)
-            print(f"  Removed {filename}")
+    for path in MESSAGES_DIR.glob('*.json'):
+        path.unlink()
+        print(f"  Removed {path.name}")
+
+def generate_messages_manifest():
+    """Write messages.json manifest listing message files under docs/messages."""
+    files = sorted(path.name for path in MESSAGES_DIR.glob('*.json'))
+    MESSAGES_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    with MESSAGES_MANIFEST.open('w', encoding='utf-8') as f:
+        json.dump(files, f, indent=2)
+    print(f"\nGenerated manifest with {len(files)} files at {MESSAGES_MANIFEST.resolve()}")
 
 def main():
     print("Kafka Protocol Messages Updater")
@@ -92,7 +102,8 @@ def main():
     print("=" * 50)
     print(f"\nDownload complete!")
     print(f"Successfully downloaded: {success_count}/{len(message_files)} files")
-    print(f"Files saved to: {os.path.abspath(MESSAGES_DIR)}/")
+    print(f"Files saved to: {MESSAGES_DIR.resolve()}/")
+    generate_messages_manifest()
 
 if __name__ == "__main__":
     main()
