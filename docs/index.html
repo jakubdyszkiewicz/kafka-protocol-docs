@@ -1549,19 +1549,34 @@
 
                 // Scroll only within the sidebar, not the entire page
                 const sidebar = activeItem.closest('.sidebar');
-                if (sidebar) {
-                    const itemTop = activeItem.offsetTop;
+                const messageList = sidebar?.querySelector('.message-list');
+                if (sidebar && messageList) {
+                    // Get the position of the item within the message list
+                    const itemOffsetTop = activeItem.offsetTop;
                     const itemHeight = activeItem.offsetHeight;
-                    const sidebarScrollTop = sidebar.scrollTop;
-                    const sidebarHeight = sidebar.clientHeight;
 
-                    // Check if item is not fully visible in sidebar
-                    if (itemTop < sidebarScrollTop) {
-                        // Item is above visible area
-                        sidebar.scrollTop = itemTop - 10;
-                    } else if (itemTop + itemHeight > sidebarScrollTop + sidebarHeight) {
-                        // Item is below visible area
-                        sidebar.scrollTop = itemTop + itemHeight - sidebarHeight + 10;
+                    // Get the height of header elements
+                    const sidebarHeader = sidebar.querySelector('.sidebar-header');
+                    const searchBox = sidebar.querySelector('.search-box');
+                    const headerHeight = (sidebarHeader?.offsetHeight || 0) + (searchBox?.offsetHeight || 0) + 30;
+
+                    // Calculate the visible area in the sidebar
+                    const visibleHeight = sidebar.clientHeight - headerHeight;
+
+                    // Current scroll position
+                    const currentScroll = sidebar.scrollTop;
+
+                    // Calculate the absolute position of the item in the sidebar
+                    const messageListTop = messageList.offsetTop;
+                    const itemAbsoluteTop = messageListTop + itemOffsetTop;
+
+                    // Check if item is visible in the current view
+                    if (itemAbsoluteTop < currentScroll + headerHeight) {
+                        // Item is above the visible area - scroll to show it at top
+                        sidebar.scrollTop = itemAbsoluteTop - headerHeight - 10;
+                    } else if (itemAbsoluteTop + itemHeight > currentScroll + headerHeight + visibleHeight) {
+                        // Item is below the visible area - scroll to show it at bottom
+                        sidebar.scrollTop = itemAbsoluteTop + itemHeight - headerHeight - visibleHeight + 10;
                     }
                 }
             }
@@ -1697,19 +1712,34 @@
 
             // Scroll only within the sidebar, not the entire page
             const sidebar = focusedItem.closest('.sidebar');
-            if (sidebar) {
-                const itemTop = focusedItem.offsetTop;
+            const messageList = sidebar?.querySelector('.message-list');
+            if (sidebar && messageList) {
+                // Get the position of the item within the message list
+                const itemOffsetTop = focusedItem.offsetTop;
                 const itemHeight = focusedItem.offsetHeight;
-                const sidebarScrollTop = sidebar.scrollTop;
-                const sidebarHeight = sidebar.clientHeight;
 
-                // Check if item is not fully visible in sidebar
-                if (itemTop < sidebarScrollTop) {
-                    // Item is above visible area
-                    sidebar.scrollTop = itemTop - 10;
-                } else if (itemTop + itemHeight > sidebarScrollTop + sidebarHeight) {
-                    // Item is below visible area
-                    sidebar.scrollTop = itemTop + itemHeight - sidebarHeight + 10;
+                // Get the height of header elements
+                const sidebarHeader = sidebar.querySelector('.sidebar-header');
+                const searchBox = sidebar.querySelector('.search-box');
+                const headerHeight = (sidebarHeader?.offsetHeight || 0) + (searchBox?.offsetHeight || 0) + 30;
+
+                // Calculate the visible area in the sidebar
+                const visibleHeight = sidebar.clientHeight - headerHeight;
+
+                // Current scroll position
+                const currentScroll = sidebar.scrollTop;
+
+                // Calculate the absolute position of the item in the sidebar
+                const messageListTop = messageList.offsetTop;
+                const itemAbsoluteTop = messageListTop + itemOffsetTop;
+
+                // Check if item is visible in the current view
+                if (itemAbsoluteTop < currentScroll + headerHeight) {
+                    // Item is above the visible area - scroll to show it at top
+                    sidebar.scrollTop = itemAbsoluteTop - headerHeight - 10;
+                } else if (itemAbsoluteTop + itemHeight > currentScroll + headerHeight + visibleHeight) {
+                    // Item is below the visible area - scroll to show it at bottom
+                    sidebar.scrollTop = itemAbsoluteTop + itemHeight - headerHeight - visibleHeight + 10;
                 }
             }
 
