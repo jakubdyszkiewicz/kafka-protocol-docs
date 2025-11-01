@@ -1322,13 +1322,13 @@
                 <div class="version-picker">
                     <label>Version:</label>
                     <select id="versionSelect-${pairId}" onchange="filterPairByVersion('${pairId}', this.value)">
-                        <option value="all">All</option>
-                        ${versions.map(v => `<option value="${v}"${v === defaultVersion ? ' selected' : ''}>${v}</option>`).join('')}
+                        <option value="all" selected>All</option>
+                        ${versions.map(v => `<option value="${v}">${v}</option>`).join('')}
                     </select>
                 </div>
             `;
 
-            setTimeout(() => filterPairByVersion(pairId, defaultVersion, true), 0);
+            setTimeout(() => filterPairByVersion(pairId, 'all', true), 0);
 
             return `
                 <div class="message-pair" id="${pairId}">
