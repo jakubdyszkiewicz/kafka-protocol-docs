@@ -1159,7 +1159,7 @@
         }
 
         // Tab switching functionality
-        function switchTab(tabName) {
+        function switchTab(tabName, skipURLUpdate) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(content => content.classList.remove('active'));
@@ -1188,7 +1188,9 @@
             }
 
             // Update URL
-            updateURL();
+            if (!skipURLUpdate) {
+                updateURL();
+            }
         }
 
         async function loadMessages() {
@@ -1291,10 +1293,7 @@
             const contentDiv = document.getElementById('content');
             contentDiv.innerHTML = contentHTML || '<div class="loading">No message pairs found</div>';
 
-            // Show first message by default
-            if (sortedNames.length > 0) {
-                showMessage(sortedNames[0]);
-            }
+            // Don't show any message here - let restoreFromURL() handle it
         }
 
         function createMessagePairHTML(name, pair) {
@@ -1329,7 +1328,7 @@
                 </div>
             `;
 
-            setTimeout(() => filterPairByVersion(pairId, defaultVersion), 0);
+            setTimeout(() => filterPairByVersion(pairId, defaultVersion, true), 0);
 
             return `
                 <div class="message-pair" id="${pairId}">
@@ -1547,7 +1546,24 @@
             const activeItem = Array.from(allListItems).find(item => item.getAttribute('data-message-name') === messageName);
             if (activeItem) {
                 activeItem.classList.add('active');
-                activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Scroll only within the sidebar, not the entire page
+                const sidebar = activeItem.closest('.sidebar');
+                if (sidebar) {
+                    const itemTop = activeItem.offsetTop;
+                    const itemHeight = activeItem.offsetHeight;
+                    const sidebarScrollTop = sidebar.scrollTop;
+                    const sidebarHeight = sidebar.clientHeight;
+
+                    // Check if item is not fully visible in sidebar
+                    if (itemTop < sidebarScrollTop) {
+                        // Item is above visible area
+                        sidebar.scrollTop = itemTop - 10;
+                    } else if (itemTop + itemHeight > sidebarScrollTop + sidebarHeight) {
+                        // Item is below visible area
+                        sidebar.scrollTop = itemTop + itemHeight - sidebarHeight + 10;
+                    }
+                }
             }
 
             // Update URL
@@ -1676,8 +1692,26 @@
             visibleItems.forEach(item => item.classList.remove('focused'));
 
             // Add focus to selected item
-            visibleItems[index].classList.add('focused');
-            visibleItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const focusedItem = visibleItems[index];
+            focusedItem.classList.add('focused');
+
+            // Scroll only within the sidebar, not the entire page
+            const sidebar = focusedItem.closest('.sidebar');
+            if (sidebar) {
+                const itemTop = focusedItem.offsetTop;
+                const itemHeight = focusedItem.offsetHeight;
+                const sidebarScrollTop = sidebar.scrollTop;
+                const sidebarHeight = sidebar.clientHeight;
+
+                // Check if item is not fully visible in sidebar
+                if (itemTop < sidebarScrollTop) {
+                    // Item is above visible area
+                    sidebar.scrollTop = itemTop - 10;
+                } else if (itemTop + itemHeight > sidebarScrollTop + sidebarHeight) {
+                    // Item is below visible area
+                    sidebar.scrollTop = itemTop + itemHeight - sidebarHeight + 10;
+                }
+            }
 
             return index;
         }
@@ -1930,7 +1964,7 @@
             // Switch to the specified tab
             const tab = params.get('tab');
             if (tab === 'errors') {
-                switchTab('errors');
+                switchTab('errors', true); // Skip URL update during restoration
 
                 // Restore error filter
                 const filter = params.get('filter');
@@ -1957,6 +1991,13 @@
                             versionSelect.value = version;
                             filterPairByVersion(pairId, version, true); // Skip URL update to avoid recursion
                         }
+                    }
+                } else {
+                    // No message specified, show the first message
+                    const messageList = document.querySelectorAll('.message-list-item');
+                    if (messageList.length > 0) {
+                        const firstMessageName = messageList[0].getAttribute('data-message-name');
+                        showMessage(firstMessageName);
                     }
                 }
             }
