@@ -15,29 +15,22 @@ A simple web-based viewer to display Kafka protocol message pairs (Request/Respo
 
 ### Local Development
 
-1. Start the web server:
+1. Start a simple static server:
    ```bash
-   python3 server.py
+   python3 -m http.server
    ```
 
-2. Open your browser to: http://localhost:8000
+2. Open your browser to: http://localhost:8000 (or the port printed in your terminal)
 
 3. The page will automatically load and display all message pairs from the `messages/` directory
 
 ### Hosting Online
 
-When deploying to a web host, you have several options:
+The viewer now loads its manifest directly from `messages.json`, so it works on any static host (GitHub Pages, Netlify, Vercel, etc.).
 
-#### Option 1: Static Hosting (GitHub Pages, Netlify, Vercel, etc.)
-
-You'll need to generate a static list of files since the API endpoint won't work on static hosts:
-
-1. Create a `messages.json` file with the list of your JSON files
-2. Modify `index.html` to read from `messages.json` instead of `/api/messages`
-
-#### Option 2: Dynamic Hosting (Heroku, Railway, etc.)
-
-Simply deploy the `server.py` along with your HTML and messages files. The server will work as-is.
+- Keep the `messages.json` manifest in sync with the files in `messages/`.
+- Deploy the repository contents (including `messages/` and `messages.json`) to your static hosting provider.
+- Optional: If you prefer a dynamic environment, you can still run `server.py`, which serves the same assets and remains useful for local experimentation.
 
 ## File Structure
 

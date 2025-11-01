@@ -1195,7 +1195,12 @@
             const contentDiv = document.getElementById('content');
 
             try {
-                const response = await fetch('/api/messages');
+                const response = await fetch('messages.json', { cache: 'no-cache' });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load messages.json (status ${response.status})`);
+                }
+
                 const filenames = await response.json();
 
                 if (filenames.length === 0) {
@@ -1223,7 +1228,7 @@
                     <div class="error">
                         <h3>Error Loading Messages</h3>
                         <p>${error.message}</p>
-                        <p>Make sure you're running the web server with: <code>python3 server.py</code></p>
+                        <p>If you're running locally, serve the site with: <code>python3 -m http.server</code></p>
                     </div>
                 `;
             }
