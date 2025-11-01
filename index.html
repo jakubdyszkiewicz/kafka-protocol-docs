@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Protocol Messages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 0;
+            font-size: 14px;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .top-bar {
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .top-bar h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d4d4d4;
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .tab-button:hover {
+            background: #3e3e42;
+        }
+
+        .tab-button.active {
+            background: #0078d4;
+            color: white;
+        }
+
+        .top-bar-link {
+            color: #4fc3f7;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .top-bar-link:hover {
+            background: #3e3e42;
+            text-decoration: underline;
+        }
+
+        .help-button {
+            background: transparent;
+            border: 1px solid #3e3e42;
+            color: #d4d4d4;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .help-button:hover {
+            background: #3e3e42;
+            border-color: #4fc3f7;
+        }
+
+        .help-tooltip {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: #2d2d30;
+            border: 1px solid #4fc3f7;
+            border-radius: 6px;
+            padding: 16px;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            font-size: 13px;
+        }
+
+        .help-button:hover .help-tooltip {
+            display: block;
+        }
+
+        .help-tooltip h3 {
+            margin: 0 0 12px 0;
+            color: #4fc3f7;
+            font-size: 14px;
+        }
+
+        .help-tooltip-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 20px;
+        }
+
+        .help-tooltip-key {
+            background: #1e1e1e;
+            color: #4fc3f7;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .help-tooltip-desc {
+            color: #d4d4d4;
+            flex: 1;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid #3e3e42;
+            color: #d4d4d4;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: #3e3e42;
+            border-color: #4fc3f7;
+        }
+
+        .tab-content {
+            display: none;
+            height: calc(100vh - 49px);
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            display: flex;
+            gap: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .errors-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .errors-table-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .errors-search {
+            margin-bottom: 20px;
+        }
+
+        .errors-search input {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px 15px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+            font-size: 14px;
+        }
+
+        .errors-search input:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+
+        .errors-search input::placeholder {
+            color: #6a6a6a;
+        }
+
+        .errors-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #252526;
+        }
+
+        .errors-table thead {
+            position: sticky;
+            top: 0;
+            background: #2d2d30;
+            z-index: 10;
+        }
+
+        .errors-table th {
+            padding: 12px 16px;
+            text-align: left;
+            color: #4fc3f7;
+            font-weight: 600;
+            border-bottom: 2px solid #4fc3f7;
+            font-size: 0.95em;
+        }
+
+        .errors-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3e3e42;
+            color: #d4d4d4;
+            font-size: 0.9em;
+        }
+
+        .errors-table tbody tr:hover {
+            background: #2d2d30;
+        }
+
+        .error-name {
+            font-weight: 600;
+            color: #9cdcfe;
+            font-family: 'Consolas', monospace;
+        }
+
+        .error-code {
+            font-family: 'Consolas', monospace;
+            color: #b5cea8;
+        }
+
+        .error-retriable {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .error-retriable.true {
+            background: #0e639c;
+            color: white;
+        }
+
+        .error-retriable.false {
+            background: #3e3e42;
+            color: #d4d4d4;
+        }
+
+        .error-description {
+            color: #b5b5b5;
+        }
+
+        .errors-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #d4d4d4;
+            font-size: 18px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #252526;
+            padding: 15px;
+            height: 100vh;
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        .sidebar h3 {
+            color: #4fc3f7;
+            font-size: 1.2em;
+            margin: 0;
+        }
+
+        .message-count {
+            color: #9cdcfe;
+            font-size: 0.85em;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 15px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+            font-size: 0.9em;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+
+        .search-box::placeholder {
+            color: #6a6a6a;
+        }
+
+        .message-list {
+            list-style: none;
+        }
+
+        .message-list-item {
+            padding: 10px 12px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 0.9em;
+            border-left: 3px solid transparent;
+        }
+
+        .message-list-item:hover {
+            background: #2d2d30;
+            border-left-color: #4fc3f7;
+        }
+
+        .message-list-item.active {
+            background: #2d2d30;
+            border-left-color: #4fc3f7;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .message-list-item.focused {
+            background: #3e3e42;
+            border-left-color: #9cdcfe;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            overflow-y: auto;
+            height: 100vh;
+            outline: none;
+        }
+
+        .message-pair {
+            display: none;
+        }
+
+        .message-pair.active {
+            display: block;
+        }
+
+        .message-pair {
+            margin-bottom: 36px;
+            background: #252526;
+            border-radius: 7px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-header {
+            background: #2d2d30;
+            padding: 18px;
+            border-bottom: 2px solid #4fc3f7;
+        }
+
+        .message-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-header h2 {
+            color: #4fc3f7;
+            font-size: 1.6em;
+            margin: 0;
+        }
+
+        .message-meta {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+
+        .message-meta-item {
+            background: #1e1e1e;
+            padding: 5px 12px;
+            border-radius: 4px;
+            border-left: 2px solid #4fc3f7;
+        }
+
+        .message-meta-item strong {
+            color: #9cdcfe;
+        }
+
+        .message-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: #1e1e1e;
+        }
+
+        .message-side {
+            background: #252526;
+            padding: 18px;
+        }
+
+        .message-side-header {
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        .message-side h3 {
+            color: #569cd6;
+            font-size: 1.25em;
+            margin: 0;
+        }
+
+        .message-side.request h3 {
+            color: #4ec9b0;
+        }
+
+        .message-side.response h3 {
+            color: #ce9178;
+        }
+
+        .version-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version-picker label {
+            color: #9cdcfe;
+            font-size: 0.9em;
+        }
+
+        .version-picker select {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .version-picker select:hover {
+            border-color: #4fc3f7;
+        }
+
+        .field-list {
+            margin-left: 0;
+        }
+
+        .field-item {
+            background: #1e1e1e;
+            border-left: 3px solid #4fc3f7;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            transition: opacity 0.2s;
+        }
+
+        .field-item.version-hidden {
+            display: none;
+        }
+
+        .field-item.nested {
+            margin-left: 18px;
+            border-left-color: #ce9178;
+        }
+
+        .field-item.nested-2 {
+            margin-left: 36px;
+            border-left-color: #4ec9b0;
+        }
+
+        .field-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #9cdcfe;
+            margin-bottom: 7px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-name-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .collapse-toggle {
+            cursor: pointer;
+            user-select: none;
+            color: #9cdcfe;
+            font-size: 0.9em;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .collapse-toggle:hover {
+            color: #4fc3f7;
+        }
+
+        .collapse-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .field-type {
+            display: inline-block;
+            background: #0e639c;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-family: 'Consolas', monospace;
+            margin-left: 10px;
+        }
+
+        .nested-fields {
+            margin-top: 12px;
+            transition: max-height 0.2s ease-out, opacity 0.2s ease-out;
+            overflow: hidden;
+        }
+
+        .nested-fields.collapsed {
+            display: none;
+        }
+
+        .field-details {
+            margin-top: 7px;
+            font-size: 0.9em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .field-detail-item {
+            color: #b5b5b5;
+        }
+
+        .field-detail-item strong {
+            color: #9cdcfe;
+            margin-right: 5px;
+            opacity: 0.75;
+            font-weight: normal;
+        }
+
+        .field-description {
+            margin-top: 10px;
+            padding: 10px;
+            background: #2d2d30;
+            border-radius: 4px;
+            font-style: italic;
+            color: #b5cea8;
+            text-align: left;
+            font-size: 0.95em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 36px;
+            color: #4fc3f7;
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: #5a1e1e;
+            color: #f48771;
+            padding: 18px;
+            border-radius: 7px;
+            margin: 18px 0;
+            font-size: 0.95em;
+        }
+
+        .error h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .error p {
+            margin: 6px 0;
+        }
+
+        .error code {
+            background: #1e1e1e;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #4fc3f7;
+        }
+
+        /* Light Mode Styles */
+        body.light-mode {
+            background: #ffffff;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .top-bar {
+            background: #f3f3f3;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        body.light-mode .top-bar h1 {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .theme-toggle {
+            border-color: #d0d0d0;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .theme-toggle:hover {
+            background: #e8e8e8;
+            border-color: #0078d4;
+        }
+
+        body.light-mode .help-button {
+            border-color: #d0d0d0;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .help-button:hover {
+            background: #e8e8e8;
+            border-color: #0078d4;
+        }
+
+        body.light-mode .help-tooltip {
+            background: #ffffff;
+            border: 1px solid #0078d4;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-mode .help-tooltip h3 {
+            color: #0078d4;
+        }
+
+        body.light-mode .help-tooltip-key {
+            background: #f3f3f3;
+            color: #0078d4;
+        }
+
+        body.light-mode .help-tooltip-desc {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .tab-button {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .tab-button:hover {
+            background: #e8e8e8;
+        }
+
+        body.light-mode .tab-button.active {
+            background: #0078d4;
+            color: white;
+        }
+
+        body.light-mode .top-bar-link {
+            color: #0078d4;
+        }
+
+        body.light-mode .top-bar-link:hover {
+            background: #e8e8e8;
+        }
+
+        body.light-mode .errors-container {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .errors-table {
+            background: #ffffff;
+        }
+
+        body.light-mode .errors-table thead {
+            background: #f3f3f3;
+        }
+
+        body.light-mode .errors-table th {
+            color: #0078d4;
+            border-bottom: 2px solid #0078d4;
+        }
+
+        body.light-mode .errors-table td {
+            border-bottom: 1px solid #e0e0e0;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .errors-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        body.light-mode .error-name {
+            color: #0078d4;
+        }
+
+        body.light-mode .error-code {
+            color: #059669;
+        }
+
+        body.light-mode .error-retriable.true {
+            background: #0078d4;
+            color: white;
+        }
+
+        body.light-mode .error-retriable.false {
+            background: #e0e0e0;
+            color: #4a4a4a;
+        }
+
+        body.light-mode .error-description {
+            color: #4a4a4a;
+        }
+
+        body.light-mode .errors-loading {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .errors-search input {
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .errors-search input:focus {
+            border-color: #0078d4;
+        }
+
+        body.light-mode .errors-search input::placeholder {
+            color: #8a8a8a;
+        }
+
+        body.light-mode .sidebar {
+            background: #f3f3f3;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        body.light-mode .sidebar h3 {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .message-count {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .search-box {
+            background: #ffffff;
+            color: #1e1e1e;
+            border: 1px solid #d0d0d0;
+        }
+
+        body.light-mode .search-box::placeholder {
+            color: #8a8a8a;
+        }
+
+        body.light-mode .search-box:focus {
+            border-color: #0078d4;
+        }
+
+        body.light-mode .message-list li {
+            border-bottom: 1px solid #e0e0e0;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .message-list li:hover {
+            background: #e8e8e8;
+        }
+
+        body.light-mode .message-list li.active {
+            background: #0078d4;
+            color: white;
+        }
+
+        body.light-mode .message-list li.focused {
+            background: #d0e8f7;
+            color: #1e1e1e;
+        }
+
+        body.light-mode .main-content {
+            background: #ffffff;
+        }
+
+        body.light-mode .message-pair {
+            border: 1px solid #e0e0e0;
+        }
+
+        body.light-mode .message-header {
+            background: #f3f3f3;
+            border-bottom: 2px solid #0078d4;
+        }
+
+        body.light-mode .message-header h2 {
+            color: #0078d4;
+        }
+
+        body.light-mode .message-meta-item {
+            background: #ffffff;
+            border-left: 2px solid #0078d4;
+        }
+
+        body.light-mode .message-meta-item strong {
+            color: #0078d4;
+        }
+
+        body.light-mode .version-picker label {
+            color: #1e1e1e;
+        }
+
+        body.light-mode .version-picker select {
+            background: #ffffff;
+            color: #1e1e1e;
+            border: 1px solid #d0d0d0;
+        }
+
+        body.light-mode .version-picker select:hover {
+            border-color: #0078d4;
+        }
+
+        body.light-mode .message-content {
+            background: #ffffff;
+        }
+
+        body.light-mode .message-side {
+            background: #f9f9f9;
+        }
+
+        body.light-mode .message-side-header {
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        body.light-mode .message-side.request h3 {
+            color: #0078d4;
+        }
+
+        body.light-mode .message-side.response h3 {
+            color: #d97706;
+        }
+
+        body.light-mode .field-item {
+            background: #f9f9f9;
+            border-left: 3px solid #0078d4;
+        }
+
+        body.light-mode .field-item.nested {
+            border-left-color: #059669;
+        }
+
+        body.light-mode .field-item.nested-2 {
+            border-left-color: #d97706;
+        }
+
+        body.light-mode .field-name {
+            color: #0078d4;
+        }
+
+        body.light-mode .collapse-toggle {
+            color: #0078d4;
+        }
+
+        body.light-mode .collapse-toggle:hover {
+            color: #005a9e;
+        }
+
+        body.light-mode .field-type {
+            background: #0078d4;
+            color: white;
+        }
+
+        body.light-mode .field-details {
+            color: #4a4a4a;
+        }
+
+        body.light-mode .field-detail-item {
+            color: #5a5a5a;
+        }
+
+        body.light-mode .field-detail-item strong {
+            color: #0078d4;
+            opacity: 0.75;
+            font-weight: normal;
+        }
+
+        body.light-mode .field-description {
+            background: #f0f0f0;
+            color: #4a4a4a;
+        }
+
+        body.light-mode .sidebar::-webkit-scrollbar-track {
+            background: #f3f3f3;
+        }
+
+        body.light-mode .sidebar::-webkit-scrollbar-thumb {
+            background: #d0d0d0;
+        }
+
+        body.light-mode .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #0078d4;
+        }
+
+        @media (max-width: 1200px) {
+            .message-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <h1>Kafka Protocol</h1>
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('messages')">Messages</button>
+                <button class="tab-button" onclick="switchTab('errors')">Errors</button>
+                <a href="https://kafka.apache.org/documentation/#recordbatch" target="_blank" class="top-bar-link">Record</a>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="help-button">
+                ⌨️
+                <div class="help-tooltip">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">f</span>
+                        <span class="help-tooltip-desc">Focus search box</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">m</span>
+                        <span class="help-tooltip-desc">Switch to Messages tab</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">e</span>
+                        <span class="help-tooltip-desc">Switch to Errors tab</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">j / k</span>
+                        <span class="help-tooltip-desc">Navigate message list</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">v</span>
+                        <span class="help-tooltip-desc">Open version picker</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">Enter</span>
+                        <span class="help-tooltip-desc">Select focused message</span>
+                    </div>
+                    <div class="help-tooltip-item">
+                        <span class="help-tooltip-key">Escape</span>
+                        <span class="help-tooltip-desc">Exit search/picker</span>
+                    </div>
+                </div>
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+                <span id="themeIcon">☀️</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="tab-content active" id="messagesTab">
+        <div class="container">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Messages</h3>
+                    <span class="message-count" id="messageCount">0</span>
+                </div>
+                <input type="text" class="search-box" id="searchBox" placeholder="Search messages..." onkeyup="filterMessages()">
+                <ul class="message-list" id="messageList">
+                    <li class="loading">Loading...</li>
+                </ul>
+            </div>
+            <div class="main-content" tabindex="-1">
+                <div id="content" class="loading">Select a message from the list</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="errorsTab">
+        <div class="errors-container">
+            <div class="errors-table-wrapper">
+                <div class="errors-search">
+                    <input type="text" id="errorSearchBox" placeholder="Search error codes..." oninput="filterErrors()">
+                </div>
+                <table class="errors-table">
+                    <thead>
+                        <tr>
+                            <th>Error</th>
+                            <th>Code</th>
+                            <th>Retriable</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="errorsTableBody">
+                        <tr>
+                            <td colspan="4" class="errors-loading">Loading error codes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+            } else {
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        // Load theme on page load
+        document.addEventListener('DOMContentLoaded', loadTheme);
+
+        // Update URL with current state
+        function updateURL() {
+            const params = new URLSearchParams();
+
+            // Determine active tab
+            const errorsTab = document.getElementById('errorsTab');
+            if (errorsTab.classList.contains('active')) {
+                params.set('tab', 'errors');
+
+                // Add filter if present
+                const errorSearchBox = document.getElementById('errorSearchBox');
+                if (errorSearchBox && errorSearchBox.value) {
+                    params.set('filter', errorSearchBox.value);
+                }
+            } else {
+                params.set('tab', 'messages');
+
+                // Add selected message if present
+                const activeMessage = document.querySelector('.message-list-item.active');
+                if (activeMessage) {
+                    const messageName = activeMessage.getAttribute('data-message-name');
+                    params.set('message', messageName);
+
+                    // Add version if a message is selected
+                    const activeMessagePair = document.querySelector('.message-pair.active');
+                    if (activeMessagePair) {
+                        const versionSelect = activeMessagePair.querySelector('select[id^="versionSelect-"]');
+                        if (versionSelect && versionSelect.value !== 'all') {
+                            params.set('version', versionSelect.value);
+                        }
+                    }
+                }
+            }
+
+            // Update URL without reloading
+            const newURL = `${window.location.pathname}?${params.toString()}`;
+            window.history.replaceState({}, '', newURL);
+        }
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            // Show selected tab content and activate corresponding button
+            if (tabName === 'messages') {
+                document.getElementById('messagesTab').classList.add('active');
+                // Find and activate the Messages button
+                tabButtons.forEach(button => {
+                    if (button.textContent === 'Messages') {
+                        button.classList.add('active');
+                    }
+                });
+            } else if (tabName === 'errors') {
+                document.getElementById('errorsTab').classList.add('active');
+                // Find and activate the Errors button
+                tabButtons.forEach(button => {
+                    if (button.textContent === 'Errors') {
+                        button.classList.add('active');
+                    }
+                });
+            }
+
+            // Update URL
+            updateURL();
+        }
+
+        async function loadMessages() {
+            const contentDiv = document.getElementById('content');
+
+            try {
+                const response = await fetch('/api/messages');
+                const filenames = await response.json();
+
+                if (filenames.length === 0) {
+                    contentDiv.innerHTML = '<div class="error">No JSON files found in messages directory</div>';
+                    return;
+                }
+
+                const files = await Promise.all(
+                    filenames.map(async filename => {
+                        const response = await fetch(`messages/${filename}`);
+                        const content = await response.text();
+                        const stripped = stripComments(content);
+                        return {
+                            filename,
+                            content: stripped,
+                            parsed: JSON.parse(stripped)
+                        };
+                    })
+                );
+
+                displayMessages(files);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Messages</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure you're running the web server with: <code>python3 server.py</code></p>
+                    </div>
+                `;
+            }
+        }
+
+        function stripComments(jsonString) {
+            let result = jsonString.replace(/\/\/.*$/gm, '');
+            result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+            return result;
+        }
+
+        function displayMessages(files) {
+            const pairs = {};
+
+            files.forEach(file => {
+                const baseName = file.filename.replace(/Request|Response/, '').replace('.json', '');
+                if (!pairs[baseName]) {
+                    pairs[baseName] = {};
+                }
+
+                if (file.filename.includes('Request')) {
+                    pairs[baseName].request = file.parsed;
+                    pairs[baseName].requestRaw = file.content;
+                } else if (file.filename.includes('Response')) {
+                    pairs[baseName].response = file.parsed;
+                    pairs[baseName].responseRaw = file.content;
+                }
+            });
+
+            // Build sidebar list
+            const messageList = document.getElementById('messageList');
+
+            // Sort by API key, then by name
+            const sortedNames = Object.keys(pairs).sort((a, b) => {
+                const apiKeyA = pairs[a].request?.apiKey ?? pairs[a].response?.apiKey ?? 9999;
+                const apiKeyB = pairs[b].request?.apiKey ?? pairs[b].response?.apiKey ?? 9999;
+
+                if (apiKeyA !== apiKeyB) {
+                    return apiKeyA - apiKeyB;
+                }
+                return a.localeCompare(b);
+            });
+
+            let listHTML = '';
+            for (const name of sortedNames) {
+                const apiKey = pairs[name].request?.apiKey ?? pairs[name].response?.apiKey ?? '?';
+                listHTML += `<li class="message-list-item" data-message-name="${name}" onclick="showMessage('${name}')">${name} (${apiKey})</li>`;
+            }
+            messageList.innerHTML = listHTML;
+
+            // Update message count
+            document.getElementById('messageCount').textContent = sortedNames.length;
+
+            // Build message content
+            let contentHTML = '';
+            for (const [name, pair] of Object.entries(pairs)) {
+                contentHTML += createMessagePairHTML(name, pair);
+            }
+
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = contentHTML || '<div class="loading">No message pairs found</div>';
+
+            // Show first message by default
+            if (sortedNames.length > 0) {
+                showMessage(sortedNames[0]);
+            }
+        }
+
+        function createMessagePairHTML(name, pair) {
+            const request = pair.request;
+            const response = pair.response;
+
+            // Get version info from request (both should have same valid versions)
+            const validVersions = request?.validVersions || response?.validVersions || '0+';
+            const versions = parseVersionRange(validVersions);
+            const defaultVersion = versions.length > 0 ? versions[versions.length - 1] : 0;
+
+            const pairId = `pair-${name.replace(/\s/g, '-')}`;
+            const requestContainerId = `${pairId}-request`;
+            const responseContainerId = `${pairId}-response`;
+
+            const requestMeta = request ? `
+                <div class="message-meta">
+                    <div class="message-meta-item"><strong>API Key:</strong> ${request.apiKey}</div>
+                    <div class="message-meta-item"><strong>Versions:</strong> ${request.validVersions || 'N/A'}</div>
+                    ${request.flexibleVersions ? `<div class="message-meta-item"><strong>Flexible:</strong> ${request.flexibleVersions}</div>` : ''}
+                    ${request.listeners ? `<div class="message-meta-item"><strong>Listeners:</strong> ${request.listeners.join(', ')}</div>` : ''}
+                </div>
+            ` : '';
+
+            const versionPicker = `
+                <div class="version-picker">
+                    <label>Version:</label>
+                    <select id="versionSelect-${pairId}" onchange="filterPairByVersion('${pairId}', this.value)">
+                        <option value="all">All</option>
+                        ${versions.map(v => `<option value="${v}"${v === defaultVersion ? ' selected' : ''}>${v}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+
+            setTimeout(() => filterPairByVersion(pairId, defaultVersion), 0);
+
+            return `
+                <div class="message-pair" id="${pairId}">
+                    <div class="message-header">
+                        <div class="message-header-top">
+                            <h2>${name}</h2>
+                            ${versionPicker}
+                        </div>
+                        ${requestMeta}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-side request">
+                            ${request ? renderMessage(request, 'request', requestContainerId) : '<p>Not available</p>'}
+                        </div>
+                        <div class="message-side response">
+                            ${response ? renderMessage(response, 'response', responseContainerId) : '<p>Not available</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMessage(msg, side, containerId) {
+            let html = `
+                <div class="message-side-header">
+                    <h3>${side === 'request' ? 'Request' : 'Response'}</h3>
+                </div>
+            `;
+
+            html += `<div id="${containerId}">`;
+
+            if (msg.fields && msg.fields.length > 0) {
+                html += '<div class="field-list">';
+                html += renderFields(msg.fields, 0, containerId);
+                html += '</div>';
+            }
+
+            html += `</div>`;
+
+            return html;
+        }
+
+        function renderFields(fields, depth = 0, containerId = '', parentPath = '') {
+            let html = '';
+            const nestedClass = depth > 0 ? `nested${depth > 1 ? '-2' : ''}` : '';
+
+            for (let i = 0; i < fields.length; i++) {
+                const field = fields[i];
+                const versionAttr = field.versions ? `data-versions="${escapeHtml(field.versions)}"` : '';
+                const hasNestedFields = field.fields && field.fields.length > 0;
+                const fieldPath = parentPath ? `${parentPath}-${i}` : `${i}`;
+                const fieldId = `${containerId}-${fieldPath}`;
+
+                html += `<div class="field-item ${nestedClass}" ${versionAttr}>`;
+
+                html += `<div class="field-name">`;
+
+                if (hasNestedFields) {
+                    html += `<span class="collapse-toggle" onclick="toggleFieldCollapse('${fieldId}')">▼</span>`;
+                }
+
+                html += `<div class="field-name-content">`;
+                html += `<span>${escapeHtml(field.name)}</span>`;
+                html += `<span class="field-type">${escapeHtml(field.type)}</span>`;
+                html += `</div>`;
+
+                html += `</div>`;
+
+                html += '<div class="field-details">';
+
+                if (field.versions) {
+                    html += `<div class="field-detail-item"><strong>Versions:</strong> ${escapeHtml(field.versions)}</div>`;
+                }
+
+                if (field.default !== undefined) {
+                    html += `<div class="field-detail-item"><strong>Default:</strong> ${escapeHtml(String(field.default))}</div>`;
+                }
+
+                if (field.nullableVersions) {
+                    html += `<div class="field-detail-item"><strong>Nullable:</strong> ${escapeHtml(field.nullableVersions)}</div>`;
+                }
+
+                html += '</div>';
+
+                if (field.about) {
+                    html += `<div class="field-description">${escapeHtml(field.about)}</div>`;
+                }
+
+                if (hasNestedFields) {
+                    html += `<div class="nested-fields" id="${fieldId}">`;
+                    html += renderFields(field.fields, depth + 1, containerId, fieldPath);
+                    html += `</div>`;
+                }
+
+                html += '</div>';
+            }
+
+            return html;
+        }
+
+        function toggleFieldCollapse(fieldId) {
+            const nestedFields = document.getElementById(fieldId);
+            const toggle = event.target;
+
+            if (nestedFields.classList.contains('collapsed')) {
+                nestedFields.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+            } else {
+                nestedFields.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function parseVersionRange(versionStr) {
+            // Parse version strings like "3-13", "9+", "0+"
+            const versions = [];
+
+            if (versionStr.includes('-')) {
+                const [start, end] = versionStr.split('-').map(v => parseInt(v.trim()));
+                for (let i = start; i <= end; i++) {
+                    versions.push(i);
+                }
+            } else if (versionStr.includes('+')) {
+                const start = parseInt(versionStr.replace('+', '').trim());
+                // Generate versions up to a reasonable max (e.g., start + 20)
+                for (let i = start; i <= start + 20; i++) {
+                    versions.push(i);
+                }
+            } else {
+                versions.push(parseInt(versionStr.trim()));
+            }
+
+            return versions;
+        }
+
+        function isFieldValidForVersion(versionStr, targetVersion) {
+            if (!versionStr) return true;
+
+            const target = parseInt(targetVersion);
+
+            if (versionStr.includes('-')) {
+                const [start, end] = versionStr.split('-').map(v => parseInt(v.trim()));
+                return target >= start && target <= end;
+            } else if (versionStr.includes('+')) {
+                const start = parseInt(versionStr.replace('+', '').trim());
+                return target >= start;
+            } else {
+                return target === parseInt(versionStr.trim());
+            }
+        }
+
+        function filterByVersion(containerId, version) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const fields = container.querySelectorAll('.field-item');
+
+            // If "All" is selected, show all fields
+            if (version === 'all') {
+                fields.forEach(field => {
+                    field.classList.remove('version-hidden');
+                });
+                return;
+            }
+
+            fields.forEach(field => {
+                const versions = field.getAttribute('data-versions');
+
+                // Fields without version constraints are always visible
+                if (!versions) {
+                    field.classList.remove('version-hidden');
+                    return;
+                }
+
+                if (isFieldValidForVersion(versions, version)) {
+                    field.classList.remove('version-hidden');
+                } else {
+                    field.classList.add('version-hidden');
+                }
+            });
+        }
+
+        function filterPairByVersion(pairId, version, skipURLUpdate) {
+            // Filter both request and response containers
+            filterByVersion(`${pairId}-request`, version);
+            filterByVersion(`${pairId}-response`, version);
+
+            // Update URL
+            if (!skipURLUpdate) {
+                updateURL();
+            }
+        }
+
+        function showMessage(messageName, skipURLUpdate) {
+            // Hide all messages
+            const allMessages = document.querySelectorAll('.message-pair');
+            allMessages.forEach(msg => msg.classList.remove('active'));
+
+            // Show selected message
+            const selectedMessage = document.getElementById(`pair-${messageName.replace(/\s/g, '-')}`);
+            if (selectedMessage) {
+                selectedMessage.classList.add('active');
+            }
+
+            // Update sidebar active state
+            const allListItems = document.querySelectorAll('.message-list-item');
+            allListItems.forEach(item => item.classList.remove('active'));
+
+            const activeItem = Array.from(allListItems).find(item => item.getAttribute('data-message-name') === messageName);
+            if (activeItem) {
+                activeItem.classList.add('active');
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Update URL
+            if (!skipURLUpdate) {
+                updateURL();
+            }
+        }
+
+        function getMatchScore(text, filter) {
+            const lowerText = text.toLowerCase();
+            const lowerFilter = filter.toLowerCase();
+
+            // Extract API key from text (format: "MessageName (apiKey)")
+            const apiKeyMatch = text.match(/\((\d+)\)$/);
+            const apiKey = apiKeyMatch ? apiKeyMatch[1] : null;
+
+            // Check if filter is numeric (searching by API key)
+            const isNumericFilter = /^\d+$/.test(filter);
+
+            if (isNumericFilter && apiKey) {
+                // Exact API key match
+                if (apiKey === filter) return 2000;
+
+                // API key starts with filter
+                if (apiKey.startsWith(filter)) return 1500;
+
+                // API key contains filter
+                if (apiKey.includes(filter)) return 1000;
+            }
+
+            // Extract just the message name (before the API key)
+            const messageName = text.replace(/\s*\(\d+\)$/, '');
+            const lowerMessageName = messageName.toLowerCase();
+
+            // Exact message name match
+            if (lowerMessageName === lowerFilter) return 900;
+
+            // Message name starts with filter
+            if (lowerMessageName.startsWith(lowerFilter)) return 500;
+
+            // Word boundary match (after space or at start)
+            const words = lowerMessageName.split(/\s+/);
+            for (const word of words) {
+                if (word.startsWith(lowerFilter)) return 250;
+            }
+
+            // Contains filter in message name
+            if (lowerMessageName.includes(lowerFilter)) return 100;
+
+            return 0;
+        }
+
+        function filterMessages() {
+            const searchBox = document.getElementById('searchBox');
+            const filter = searchBox.value.toLowerCase();
+            const listItems = Array.from(document.querySelectorAll('.message-list-item'));
+            let visibleCount = 0;
+
+            // Calculate scores and filter
+            const scoredItems = listItems.map(item => {
+                const text = item.textContent;
+                const score = getMatchScore(text, filter);
+                return { item, score, text };
+            });
+
+            // Sort by score (highest first), then alphabetically
+            scoredItems.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                return a.text.localeCompare(b.text);
+            });
+
+            // Reorder in DOM and show/hide based on score
+            const messageList = document.getElementById('messageList');
+            scoredItems.forEach(({ item, score }) => {
+                if (score > 0 || filter === '') {
+                    item.style.display = '';
+                    messageList.appendChild(item); // Move to end (reorder)
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update message count
+            const totalCount = listItems.length;
+            const countElement = document.getElementById('messageCount');
+            if (filter) {
+                countElement.textContent = `${visibleCount} / ${totalCount}`;
+            } else {
+                countElement.textContent = totalCount;
+            }
+        }
+
+        function selectFirstVisibleMessage() {
+            const listItems = document.querySelectorAll('.message-list-item');
+            for (const item of listItems) {
+                if (item.style.display !== 'none') {
+                    const messageName = item.getAttribute('data-message-name');
+                    showMessage(messageName);
+
+                    // Remove focus from all items so arrow keys can scroll the page
+                    listItems.forEach(item => item.classList.remove('focused'));
+
+                    // Focus the main content area to enable scrolling
+                    const mainContent = document.querySelector('.main-content');
+                    if (mainContent) {
+                        mainContent.focus({ preventScroll: true });
+                    }
+                    break;
+                }
+            }
+        }
+
+        function getVisibleItems() {
+            const listItems = document.querySelectorAll('.message-list-item');
+            return Array.from(listItems).filter(item => item.style.display !== 'none');
+        }
+
+        function focusMessageItem(index) {
+            const visibleItems = getVisibleItems();
+            if (index < 0 || index >= visibleItems.length) return;
+
+            // Remove focus from all items
+            visibleItems.forEach(item => item.classList.remove('focused'));
+
+            // Add focus to selected item
+            visibleItems[index].classList.add('focused');
+            visibleItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            return index;
+        }
+
+        function getCurrentFocusedIndex() {
+            const visibleItems = getVisibleItems();
+            for (let i = 0; i < visibleItems.length; i++) {
+                if (visibleItems[i].classList.contains('focused')) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function getCurrentActiveIndex() {
+            const visibleItems = getVisibleItems();
+            for (let i = 0; i < visibleItems.length; i++) {
+                if (visibleItems[i].classList.contains('active')) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function selectFocusedMessage() {
+            const visibleItems = getVisibleItems();
+            const focusedItem = visibleItems.find(item => item.classList.contains('focused'));
+            if (focusedItem) {
+                const messageName = focusedItem.getAttribute('data-message-name');
+                showMessage(messageName);
+
+                // Remove focus from all items so arrow keys can scroll the page
+                visibleItems.forEach(item => item.classList.remove('focused'));
+
+                // Focus the main content area to enable scrolling
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.focus({ preventScroll: true });
+                }
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            const inInputField = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+            const inSelect = document.activeElement.tagName === 'SELECT';
+
+            // Press 'F' to focus search box (without modifier keys like CMD/Ctrl)
+            if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                // Only if not already in an input field
+                if (!inInputField && !inSelect) {
+                    e.preventDefault();
+                    // Check which tab is active
+                    const messagesTab = document.getElementById('messagesTab');
+                    const errorsTab = document.getElementById('errorsTab');
+
+                    if (errorsTab.classList.contains('active')) {
+                        // Focus error search box
+                        const errorSearchBox = document.getElementById('errorSearchBox');
+                        errorSearchBox.focus();
+                        errorSearchBox.select();
+                    } else {
+                        // Focus messages search box
+                        const searchBox = document.getElementById('searchBox');
+                        searchBox.focus();
+                        searchBox.select();
+                    }
+                }
+            }
+
+            // Press 'M' to switch to Messages tab
+            if ((e.key === 'm' || e.key === 'M') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                if (!inInputField && !inSelect) {
+                    e.preventDefault();
+                    switchTab('messages');
+                }
+            }
+
+            // Press 'E' to switch to Errors tab
+            if ((e.key === 'e' || e.key === 'E') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                if (!inInputField && !inSelect) {
+                    e.preventDefault();
+                    switchTab('errors');
+                }
+            }
+
+            // Press 'V' to open version picker
+            if ((e.key === 'v' || e.key === 'V') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                if (!inInputField && !inSelect) {
+                    e.preventDefault();
+                    // Find the version select of the currently active message
+                    const activeMessage = document.querySelector('.message-pair.active');
+                    if (activeMessage) {
+                        const versionSelect = activeMessage.querySelector('select[id^="versionSelect-"]');
+                        if (versionSelect) {
+                            versionSelect.focus();
+                            // Try to open the picker (modern browsers)
+                            if (typeof versionSelect.showPicker === 'function') {
+                                try {
+                                    versionSelect.showPicker();
+                                } catch (e) {
+                                    // showPicker may fail in some contexts, just focus is fine
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Press Escape to exit version picker
+            if (e.key === 'Escape' && inSelect) {
+                e.preventDefault();
+                document.activeElement.blur();
+            }
+
+            // Press 'j' to move down (in list or version picker)
+            if (e.key === 'j' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                if (inSelect) {
+                    // Navigate version picker down
+                    e.preventDefault();
+                    const select = document.activeElement;
+                    if (select.selectedIndex < select.options.length - 1) {
+                        select.selectedIndex++;
+                        select.dispatchEvent(new Event('change'));
+                    }
+                } else if (!inInputField) {
+                    // Navigate message list down
+                    e.preventDefault();
+                    let currentIndex = getCurrentFocusedIndex();
+                    if (currentIndex === -1) {
+                        // No focused item, start from active message and move down
+                        const activeIndex = getCurrentActiveIndex();
+                        focusMessageItem(activeIndex === -1 ? 0 : activeIndex + 1);
+                    } else {
+                        focusMessageItem(currentIndex + 1);
+                    }
+                }
+            }
+
+            // Press 'k' to move up (in list or version picker)
+            if (e.key === 'k' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                if (inSelect) {
+                    // Navigate version picker up
+                    e.preventDefault();
+                    const select = document.activeElement;
+                    if (select.selectedIndex > 0) {
+                        select.selectedIndex--;
+                        select.dispatchEvent(new Event('change'));
+                    }
+                } else if (!inInputField) {
+                    // Navigate message list up
+                    e.preventDefault();
+                    let currentIndex = getCurrentFocusedIndex();
+                    if (currentIndex === -1) {
+                        // No focused item, start from active message and move up
+                        const activeIndex = getCurrentActiveIndex();
+                        focusMessageItem(activeIndex === -1 ? 0 : activeIndex - 1);
+                    } else {
+                        focusMessageItem(currentIndex - 1);
+                    }
+                }
+            }
+
+            // Press Enter to select focused message (when not in input field)
+            if (e.key === 'Enter' && !inInputField && !inSelect) {
+                e.preventDefault();
+                selectFocusedMessage();
+            }
+        });
+
+        // Press Enter in search box to select first visible message
+        document.getElementById('searchBox').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                selectFirstVisibleMessage();
+                this.blur(); // Remove focus from search box
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                this.blur(); // Remove focus from search box
+            }
+        });
+
+        // Error search box keyboard shortcuts
+        document.getElementById('errorSearchBox').addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.blur(); // Remove focus from search box
+            }
+        });
+
+        async function loadErrorCodes() {
+            const tbody = document.getElementById('errorsTableBody');
+
+            try {
+                const response = await fetch('error_codes.json');
+                const errorCodes = await response.json();
+
+                // Clear loading message
+                tbody.innerHTML = '';
+
+                // Populate table
+                errorCodes.forEach(error => {
+                    const row = document.createElement('tr');
+                    row.className = 'error-row';
+
+                    row.innerHTML = `
+                        <td class="error-name">${escapeHtml(error.error)}</td>
+                        <td class="error-code">${error.code}</td>
+                        <td><span class="error-retriable ${error.retriable}">${error.retriable ? 'True' : 'False'}</span></td>
+                        <td class="error-description">${escapeHtml(error.description)}</td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+
+                console.log(`Loaded ${errorCodes.length} error codes`);
+            } catch (error) {
+                console.error('Error loading error codes:', error);
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #ce9178;">Failed to load error codes</td></tr>';
+            }
+        }
+
+        function filterErrors(skipURLUpdate) {
+            const searchBox = document.getElementById('errorSearchBox');
+            const filter = searchBox.value.toLowerCase();
+            const rows = document.querySelectorAll('.error-row');
+
+            rows.forEach(row => {
+                const errorName = row.querySelector('.error-name').textContent.toLowerCase();
+                const errorCode = row.querySelector('.error-code').textContent.toLowerCase();
+
+                // Check if filter matches error name or code
+                if (errorName.includes(filter) || errorCode.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update URL
+            if (!skipURLUpdate) {
+                updateURL();
+            }
+        }
+
+        // Restore state from URL parameters
+        function restoreFromURL() {
+            const params = new URLSearchParams(window.location.search);
+
+            // Switch to the specified tab
+            const tab = params.get('tab');
+            if (tab === 'errors') {
+                switchTab('errors');
+
+                // Restore error filter
+                const filter = params.get('filter');
+                if (filter) {
+                    const errorSearchBox = document.getElementById('errorSearchBox');
+                    if (errorSearchBox) {
+                        errorSearchBox.value = filter;
+                        filterErrors(true); // Skip URL update to avoid recursion
+                    }
+                }
+            } else {
+                // Default to messages tab
+                const message = params.get('message');
+                if (message) {
+                    // Show the specified message
+                    showMessage(message, true); // Skip URL update to avoid recursion
+
+                    // Set the version if specified
+                    const version = params.get('version');
+                    if (version) {
+                        const pairId = `pair-${message.replace(/\s/g, '-')}`;
+                        const versionSelect = document.getElementById(`versionSelect-${pairId}`);
+                        if (versionSelect) {
+                            versionSelect.value = version;
+                            filterPairByVersion(pairId, version, true); // Skip URL update to avoid recursion
+                        }
+                    }
+                }
+            }
+        }
+
+        // Load data and then restore state from URL
+        Promise.all([loadMessages(), loadErrorCodes()]).then(() => {
+            // Give a moment for DOM to be fully populated
+            setTimeout(() => {
+                restoreFromURL();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
