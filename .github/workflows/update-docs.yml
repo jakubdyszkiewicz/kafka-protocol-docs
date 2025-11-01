@@ -1,0 +1,41 @@
+name: Update Kafka Protocol Docs
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run scrape_error_codes.py
+        run: python scrape_error_codes.py
+
+      - name: Run update_messages.py
+        run: python update_messages.py
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Update generated Kafka protocol docs"
+          title: "Update generated Kafka protocol docs"
+          body: |
+            Automated update of generated documentation assets.
+          branch: automation/update-generated-kafka-protocol-docs
+          delete-branch: true
