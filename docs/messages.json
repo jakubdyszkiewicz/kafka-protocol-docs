@@ -179,6 +179,8 @@
   "UpdateMetadataResponse.json",
   "UpdateRaftVoterRequest.json",
   "UpdateRaftVoterResponse.json",
+  "VoteRequest.json",
+  "VoteResponse.json",
   "WriteShareGroupStateRequest.json",
   "WriteShareGroupStateResponse.json",
   "WriteTxnMarkersRequest.json",
