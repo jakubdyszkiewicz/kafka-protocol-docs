@@ -13,24 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Version 1 is the same as version 0 (new field in request).
-// Version 2 is the same as version 0 (new field in request).
 {
-  "apiKey": 63,
+  "apiKey": 93,
   "type": "response",
-  "name": "BrokerHeartbeatResponse",
-  "validVersions": "0-2",
+  "name": "StreamsGroupTopologyDescriptionUpdateResponse",
+  "validVersions": "0",
   "flexibleVersions": "0+",
+  // Supported errors:
+  // - GROUP_AUTHORIZATION_FAILED (version 0+)
+  // - NOT_COORDINATOR (version 0+)
+  // - COORDINATOR_NOT_AVAILABLE (version 0+)
+  // - COORDINATOR_LOAD_IN_PROGRESS (version 0+)
+  // - INVALID_REQUEST (version 0+)
+  // - UNSUPPORTED_VERSION (version 0+)
+  // - UNKNOWN_MEMBER_ID (version 0+)
+  // - GROUP_ID_NOT_FOUND (version 0+)
+  // - STREAMS_TOPOLOGY_DESCRIPTION_UPDATE_FAILED (version 0+)
   "fields": [
     { "name": "ThrottleTimeMs", "type": "int32", "versions": "0+",
-      "about": "Duration in milliseconds for which the request was throttled due to a quota violation, or zero if the request did not violate any quota." },
+      "about": "The duration in milliseconds for which the request was throttled due to a quota violation, or zero if the request did not violate any quota." },
     { "name": "ErrorCode", "type": "int16", "versions": "0+",
-      "about": "The error code, or 0 if there was no error." },
-    { "name": "IsCaughtUp", "type": "bool", "versions": "0+", "default": "false",
-      "about": "True if the broker has approximately caught up with the latest metadata." },
-    { "name": "IsFenced", "type": "bool", "versions": "0+", "default": "true",
-      "about": "True if the broker is fenced." },
-    { "name": "ShouldShutDown", "type": "bool", "versions": "0+",
-      "about": "True if the broker should proceed with its shutdown." }
+      "about": "The top-level error code, or 0 if there was no error." },
+    { "name": "ErrorMessage", "type": "string", "versions": "0+",
+      "nullableVersions": "0+", "default": "null",
+      "about": "The top-level error message, or null if there was no error." }
   ]
 }
